@@ -74,7 +74,10 @@ export class RingManager {
     const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
     this.scene.add(planetMesh);
 
-    const periodMs = periodMsOverride || periodDays * 24 * 60 * 60 * 1000;
+    const periodMs =
+     periodMsOverride !== null
+      ? periodMsOverride
+      : periodDays * 24 * 60 * 60 * 1000;
 
     this.rings.push({
       name,

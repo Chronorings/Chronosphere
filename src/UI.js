@@ -241,8 +241,8 @@ createDeleteAllButton() {
 
     deleteBtn.style.color = dark ? "white" : "black";
     deleteBtn.style.background = dark
-      ? "rgba(255,255,255,0.25)"
-      : "rgba(0,0,0,0.2)";
+      ? "rgba(255,120,120,0.35)"
+      : "rgba(180,0,0,0.25)";
   };
 
   Object.assign(deleteBtn.style, {
@@ -313,7 +313,7 @@ createDeleteAllButton() {
     nameInput.placeholder = "Name";
 
     const timeInput = document.createElement("input");
-    timeInput.placeholder = "00:01:30 / 1m30s / 90s";
+    timeInput.placeholder = "ex) 00:00:01:30 / 1m30s / 90s";
 
     [nameInput, timeInput].forEach(input => {
       Object.assign(input.style, {
