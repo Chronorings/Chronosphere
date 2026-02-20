@@ -9,6 +9,7 @@ export class RingManager {
     this.mode = "concentric";
     this.radiusScale = 1;
     this.theme = "dark";
+    this.onCycle = null;
   }
 
   setMode(mode) {
@@ -86,7 +87,9 @@ export class RingManager {
       hitMesh,
       planetMesh,
       ringMaterial,
-      periodMs
+      periodMs,
+      lastPhase: 0,
+      notifyEnabled: true   // ← 追加
     });
   }
 
@@ -111,12 +114,19 @@ export class RingManager {
     this.rings.forEach((r, i) => {
 
       const scaledRadius = r.baseRadius * this.radiusScale;
-      const phase = -getPhase(r.periodMs);
+      const phase = getPhase(r.periodMs); // マイナス外す
 
-      const offsetPhase = phase + Math.PI / 2;
+      // 周回検出（位相が小さく戻ったら1周）
+       if (phase < r.lastPhase) {
+        this.onCycle?.(r); // コールバック
+       }
+
+       r.lastPhase = phase;
+
+      const offsetPhase = phase - Math.PI / 2;
 
       const x = Math.cos(offsetPhase) * scaledRadius;
-      const y = Math.sin(offsetPhase) * scaledRadius;
+      const y = -Math.sin(offsetPhase) * scaledRadius;
 
       r.planetMesh.position.set(x, y, 0);
 

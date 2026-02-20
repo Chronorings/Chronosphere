@@ -13,6 +13,12 @@ let currentTheme = "dark";
 document.body.style.background = "#000";
 
 // ========================
+// グローバル通知フラグ
+// ========================
+
+let globalNotificationsEnabled = true;
+
+// ========================
 // 初期時環
 // ========================
 
@@ -20,6 +26,61 @@ ringManager.addRing(1 / 86400, "Second");
 ringManager.addRing(1 / 1440, "Minute");
 ringManager.addRing(1 / 24, "Hour");
 ringManager.addRing(1, "Day");
+
+// ========================
+// 通知制御フラグ（追加差分）
+// ========================
+
+let notificationsEnabled = true;
+
+// ========================
+// 周回通知UI（追加差分）
+// ========================
+
+const toastContainer = document.createElement("div");
+Object.assign(toastContainer.style, {
+  position: "fixed",
+  top: "20px",
+  right: "20px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  zIndex: "10000",
+  pointerEvents: "none"
+});
+document.body.appendChild(toastContainer);
+
+function showCycleToast(name) {
+
+  const toast = document.createElement("div");
+  toast.innerText = `${name} completed one cycle`;
+
+  Object.assign(toast.style, {
+    padding: "12px 18px",
+    borderRadius: "16px",
+    background: "rgba(255,255,255,0.15)",
+    backdropFilter: "blur(20px)",
+    border: "1px solid rgba(255,255,255,0.3)",
+    color: "white",
+    fontFamily: "system-ui",
+    opacity: "0",
+    transform: "translateY(-10px)",
+    transition: "all 0.4s ease"
+  });
+
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = "1";
+    toast.style.transform = "translateY(0)";
+  });
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(-10px)";
+    setTimeout(() => toast.remove(), 400);
+  }, 3000);
+}
 
 // ========================
 // 多言語データ
@@ -219,6 +280,34 @@ function showDetailCard(ring) {
   divider.style.background = "rgba(255,255,255,0.3)";
   divider.style.margin = "8px 0";
 
+  // 通知トグル（リング個別）
+
+  const notifyToggle = createIOSSwitch(ring.notifyEnabled);
+
+  notifyToggle.querySelector("div").innerText = "Notification";
+
+  const track = notifyToggle.querySelector("div:nth-child(2)");
+
+  track.onclick = () => {
+
+    ring.notifyEnabled = !ring.notifyEnabled;
+
+    track.style.background =
+      ring.notifyEnabled ? "#34C759" : "rgba(255,255,255,0.3)";
+
+  const knob = track.firstChild;
+
+  knob.style.left =
+    ring.notifyEnabled ? "22px" : "2px";
+};
+
+box.append(title, time);
+
+// ← ここに移動
+box.appendChild(notifyToggle);
+
+box.append(divider, editBtn, deleteBtn);
+
   const editBtn = createIOSButton("Edit");
   const deleteBtn = createIOSButton("Delete");
 
@@ -292,7 +381,7 @@ function showDeleteDialog(ring) {
 // UI接続（Theme統合）
 // ========================
 
-new UI(
+const ui = new UI(
   null,
   (scale) => ringManager.setRadiusScale(scale),
   (name, timeInput) => {
@@ -305,6 +394,105 @@ new UI(
     ringManager.clearAll();
   }
 );
+
+// ========================
+// 通知トグルUI（追加差分）
+// ========================
+
+function createIOSSwitch(initialState = true) {
+
+  const container = document.createElement("div");
+  Object.assign(container.style, {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between", // ← 左右に分離
+  gap: "10px",
+  marginTop: "10px",
+  width: "100%",                   // ← 横幅いっぱいに
+  fontFamily: "system-ui",
+  color: "white",
+  fontSize: "13px",
+  position: "relative",
+  zIndex: "10001"   // ← 追加
+});
+
+  const label = document.createElement("div");
+  label.innerText = "Notification";
+  label.style.opacity = notificationsEnabled ? "0.85" : "0.4";
+
+  const switchTrack = document.createElement("div");
+  Object.assign(switchTrack.style, {
+    width: "46px",
+    height: "26px",
+    borderRadius: "13px",
+    background: initialState ? "#34C759" : "rgba(255,255,255,0.3)",
+    position: "relative",
+    cursor: "pointer",
+    opacity: "1",
+    transition: "background 0.2s ease"
+  });
+
+  const knob = document.createElement("div");
+  Object.assign(knob.style, {
+    width: "22px",
+    height: "22px",
+    borderRadius: "50%",
+    background: "white",
+    position: "absolute",
+    top: "2px",
+    left: initialState ? "22px" : "2px",
+    opacity: "1",
+    transition: "left 0.2s ease"
+  });
+
+  switchTrack.appendChild(knob);
+
+  switchTrack.onclick = () => {
+
+  globalNotificationsEnabled = !globalNotificationsEnabled;
+
+  switchTrack.style.background =
+    globalNotificationsEnabled ? "#34C759" : "rgba(255,255,255,0.3)";
+
+  knob.style.left =
+    globalNotificationsEnabled ? "22px" : "2px";
+};
+
+  container.appendChild(label);
+  container.appendChild(switchTrack);
+
+  return container;
+}
+
+// UIの左下コンテナに追加
+// ========================
+// 通知トグルを Scale と Add の間に挿入
+// ========================
+
+const switchElement = createIOSSwitch(true);
+
+// Addボタンを探す（テキストで判定）
+const addButton = Array.from(ui.container.querySelectorAll("button"))
+  .find(btn => btn.innerText.includes("Add"));
+
+if (addButton) {
+  ui.container.insertBefore(switchElement, addButton);
+} else {
+  // 万一見つからない場合は末尾に追加
+  ui.container.appendChild(switchElement);
+}
+
+// ========================
+// 周回通知接続（追加差分）
+// ========================
+
+ringManager.onCycle = (ring) => {
+
+  if (!globalNotificationsEnabled) return;
+  if (!ring.notifyEnabled) return;
+
+  showCycleToast(ring.name);
+};
 
 // ========================
 // Raycaster

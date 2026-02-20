@@ -111,7 +111,7 @@ export class UI {
   const label = document.createElement("div");
   label.innerText = "Scale";
   label.style.fontSize = "13px";
-  label.style.opacity = "0.7";
+  label.style.opacity = "0.85";
 
   const slider = document.createElement("input");
   slider.type = "range";
@@ -282,7 +282,7 @@ createDeleteAllButton() {
     Object.assign(panel.style, {
       position: "fixed",
       left: "20px",
-      bottom: "220px",
+      bottom: "265px",
       padding: "20px",
       borderRadius: "24px",
       backdropFilter: "blur(30px)",
@@ -392,7 +392,7 @@ showDeleteAllDialog() {
   Object.assign(panel.style, {
     position: "fixed",
     left: "20px",
-    bottom: "223px",
+    bottom: "262px",
     padding: "20px",
     borderRadius: "24px",
     backdropFilter: "blur(30px)",
