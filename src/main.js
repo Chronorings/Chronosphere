@@ -417,7 +417,7 @@ function createIOSSwitch(initialState = true) {
 });
 
   const label = document.createElement("div");
-  label.innerText = "Notification";
+  label.innerText = "All Notification";
   label.style.opacity = notificationsEnabled ? "0.85" : "0.4";
 
   const switchTrack = document.createElement("div");
