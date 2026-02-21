@@ -284,7 +284,7 @@ function showDetailCard(ring) {
 
   const notifyToggle = createIOSSwitch(ring.notifyEnabled);
 
-  notifyToggle.querySelector("div").innerText = "All Notification";
+  notifyToggle.querySelector("div").innerText = "Notification";
 
   const track = notifyToggle.querySelector("div:nth-child(2)");
 
