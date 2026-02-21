@@ -3,8 +3,12 @@ import { SceneManager } from "./Scene.js";
 import { RingManager } from "./RingManager.js";
 import { UI } from "./UI.js";
 
+const songMap = {
+  "Archaiq_Smile": "https://chronorings.github.io/Chronoresource/Archaiq_Smile.mp3",
+};
+
 const sceneManager = new SceneManager();
-const ringManager = new RingManager(sceneManager.scene);
+const ringManager = new RingManager(sceneManager.scene, songMap);
 
 let isModalOpen = false;
 let currentTheme = "dark";
@@ -161,6 +165,42 @@ function formatTime(ms) {
 }
 
 // ========================
+// Trash Zone（強化版）
+// ========================
+
+const trashZone = document.createElement("div");
+
+trashZone.innerText = "🗑";
+
+Object.assign(trashZone.style, {
+  position: "fixed",
+  bottom: "40px",
+  left: "50%",
+  transform: "translateX(-50%) scale(0.8)",
+  fontSize: "52px",
+  opacity: "0",
+  transition: "all 0.25s ease",
+  pointerEvents: "none",
+  zIndex: "10000"
+});
+
+document.body.appendChild(trashZone);
+
+function vibrateTrash() {
+  trashZone.animate(
+    [
+      { transform: "translateX(-50%) scale(1.2) rotate(-8deg)" },
+      { transform: "translateX(-50%) scale(1.2) rotate(8deg)" },
+      { transform: "translateX(-50%) scale(1.2) rotate(0deg)" }
+    ],
+    {
+      duration: 180,
+      easing: "ease-out"
+    }
+  );
+}
+
+// ========================
 // モーダルUI（既存維持）
 // ========================
 
@@ -267,61 +307,141 @@ function showDetailCard(ring) {
 
   const { overlay, box } = createGlassWindow();
 
-  const title = document.createElement("div");
-  title.innerText = ring.name;
-  title.style.fontSize = "18px";
+  const deleteIcon = document.createElement("div");
+  deleteIcon.innerText = "Delete";
 
-  const time = document.createElement("div");
-  time.innerText = formatTime(ring.periodMs);
-  time.style.opacity = "0.7";
+  Object.assign(deleteIcon.style, {
+    position: "fixed",
+    fontFamily: "system-ui",
+    fontSize: "14px",
+    opacity: "1.0",
+    color: "white",
+    cursor: "pointer",
+    transition: "opacity 0.2s ease",
+    zIndex: "10001"
+  });
 
-  const divider = document.createElement("div");
-  divider.style.height = "1px";
-  divider.style.background = "rgba(255,255,255,0.3)";
-  divider.style.margin = "8px 0";
-
-  // 通知トグル（リング個別）
-
-  const notifyToggle = createIOSSwitch(ring.notifyEnabled);
-
-  notifyToggle.querySelector("div").innerText = "Notification";
-
-  const track = notifyToggle.querySelector("div:nth-child(2)");
-
-  track.onclick = () => {
-
-    ring.notifyEnabled = !ring.notifyEnabled;
-
-    track.style.background =
-      ring.notifyEnabled ? "#34C759" : "rgba(255,255,255,0.3)";
-
-  const knob = track.firstChild;
-
-  knob.style.left =
-    ring.notifyEnabled ? "22px" : "2px";
-};
-
-box.append(title, time);
-
-// ← ここに移動
-box.appendChild(notifyToggle);
-
-box.append(divider, editBtn, deleteBtn);
-
-  const editBtn = createIOSButton("Edit");
-  const deleteBtn = createIOSButton("Delete");
-
-  editBtn.onclick = () => {
-    overlay.remove();
-    showEditDialog(ring);
+  deleteIcon.onmouseenter = () => {
+    deleteIcon.style.opacity = "1";
   };
 
-  deleteBtn.onclick = () => {
+  deleteIcon.onmouseleave = () => {
+    deleteIcon.style.opacity = "0.6";
+  };
+
+  deleteIcon.onclick = () => {
+    deleteIcon.remove();
     overlay.remove();
     showDeleteDialog(ring);
   };
 
-  box.append(title, time, divider, editBtn, deleteBtn);
+  document.body.appendChild(deleteIcon);
+
+  function positionDeleteIcon() {
+
+    const rect = box.getBoundingClientRect();
+
+    deleteIcon.style.left =
+      rect.left + rect.width / 2 + "px";
+
+    deleteIcon.style.top =
+      rect.bottom + 12 + "px";
+
+    deleteIcon.style.transform = "translateX(-50%)";
+  }
+
+  // ========================
+  // 名前（インライン編集）
+  // ========================
+
+  const title = document.createElement("div");
+  title.innerText = ring.name;
+  title.style.fontSize = "18px";
+  title.style.cursor = "pointer";
+
+  title.onclick = () => {
+
+    const input = createIOSInput("Name", ring.name);
+    input.style.fontSize = "18px";
+    box.replaceChild(input, title);
+    input.focus();
+
+    const save = () => {
+      if (input.value.trim() !== "") {
+        ring.name = input.value.trim();
+      }
+      title.innerText = ring.name;
+      box.replaceChild(title, input);
+    };
+
+    input.onblur = save;
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") save();
+    };
+  };
+
+  // ========================
+  // 時間（インライン編集）
+  // ========================
+
+  const time = document.createElement("div");
+  time.innerText = formatTime(ring.periodMs);
+  time.style.opacity = "0.7";
+  time.style.cursor = "pointer";
+
+  time.onclick = () => {
+
+    const input = createIOSInput("Time", formatTime(ring.periodMs));
+    box.replaceChild(input, time);
+    input.focus();
+
+    const save = () => {
+      const ms = parseTimeInput(input.value);
+      if (ms > 0) {
+        ring.periodMs = ms;
+      }
+      time.innerText = formatTime(ring.periodMs);
+      box.replaceChild(time, input);
+    };
+
+    input.onblur = save;
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") save();
+    };
+  };
+
+  const notifyToggle = createIOSSwitch(ring.notifyEnabled ?? true);
+  notifyToggle.querySelector("div").innerText = "Notification";
+
+  const track = notifyToggle.querySelector("div:nth-child(2)");
+  const knob = track.firstChild;
+
+  track.onclick = () => {
+    ring.notifyEnabled = !ring.notifyEnabled;
+    track.style.background =
+      ring.notifyEnabled ? "#34C759" : "rgba(255,255,255,0.3)";
+    knob.style.left =
+      ring.notifyEnabled ? "22px" : "2px";
+  };
+
+  // ← ここが重要
+  box.append(title, time, notifyToggle);
+
+  // DOM確定後に位置計算
+  requestAnimationFrame(positionDeleteIcon);
+
+  window.addEventListener("resize", positionDeleteIcon);
+
+  // overlay削除時にアイコンも消す
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(overlay)) {
+      deleteIcon.remove();
+      window.removeEventListener("resize", positionDeleteIcon);
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, { childList: true });
 }
 
 // ========================
@@ -365,14 +485,28 @@ function showDeleteDialog(ring) {
   };
 
   confirmBtn.onclick = () => {
-    ring.ringMesh.removeFromParent();
-    ring.hitMesh.removeFromParent();
-    ring.planetMesh.removeFromParent();
-    ringManager.rings =
-      ringManager.rings.filter(r => r !== ring);
-    overlay.remove();
-    isModalOpen = false;
-  };
+
+  ring.ringMesh.removeFromParent();
+  ring.hitMesh.removeFromParent();
+  ring.planetMesh.removeFromParent();
+
+  // 🌠 追加：trailも削除
+  if (ring.trailLine) {
+    ring.trailLine.removeFromParent();
+  }
+
+  // 音楽も止める（音楽リングの場合）
+  if (ring.audio) {
+    ring.audio.pause();
+    ring.audio.src = "";
+  }
+
+  ringManager.rings =
+    ringManager.rings.filter(r => r !== ring);
+
+  overlay.remove();
+  isModalOpen = false;
+};
 
   box.append(message, cancelBtn, confirmBtn);
 }
